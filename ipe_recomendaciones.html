@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IPE · Extractor de recomendaciones</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --paper:#F6F2E9;
+  --paper-dim:#EFE9D9;
+  --card:#FBF8F1;
+  --ink:#241F1A;
+  --ink-soft:#6B6259;
+  --line:#DCD2BA;
+  --terracotta:#C1622D;
+  --slate:#3D5A73;
+  --olive:#69763A;
+  --mustard:#A1791E;
+  --wine:#7A3B49;
+  --teal:#2B6B66;
+  --success:#3F7A52;
+  --error:#A33B3B;
+  --radius:2px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+.app{
+  max-width:880px;
+  margin:0 auto;
+  padding:32px 20px 80px;
+}
+
+/* ---------- Header ---------- */
+.masthead{
+  border-bottom:2px solid var(--ink);
+  padding-bottom:20px;
+  margin-bottom:28px;
+}
+.masthead-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.14em;
+  color:var(--terracotta);
+  font-weight:600;
+  margin-bottom:8px;
+}
+.masthead h1{
+  font-family:'Source Serif 4',serif;
+  font-size:32px;
+  font-weight:700;
+  margin:0 0 10px;
+  line-height:1.15;
+}
+.masthead .subtitle{
+  color:var(--ink-soft);
+  font-size:15px;
+  max-width:620px;
+  margin:0 0 14px;
+}
+.privacy-note{
+  font-size:12.5px;
+  color:var(--ink-soft);
+  background:var(--paper-dim);
+  border-left:3px solid var(--slate);
+  padding:9px 12px;
+  max-width:620px;
+}
+
+/* ---------- Add category ---------- */
+.add-category{
+  margin-bottom:30px;
+}
+.quick-add{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:12px;
+}
+.chip{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  letter-spacing:0.03em;
+  background:var(--card);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:6px 12px;
+  border-radius:20px;
+  cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.chip:hover{border-color:var(--terracotta); background:#fff;}
+.chip:disabled{opacity:0.35; cursor:default;}
+.new-category-form{
+  display:flex;
+  gap:8px;
+}
+.new-category-form input{
+  flex:1;
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--card);
+  color:var(--ink);
+}
+.new-category-form input:focus{outline:none; border-color:var(--ink);}
+.btn-primary{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:13.5px;
+  background:var(--ink);
+  color:var(--paper);
+  border:none;
+  padding:9px 16px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.btn-primary:hover{background:var(--terracotta);}
+.btn-primary:disabled{background:var(--line); color:var(--ink-soft); cursor:default;}
+
+/* ---------- Folder / category card ---------- */
+.categories{display:flex; flex-direction:column; gap:34px;}
+.empty-state{color:var(--ink-soft); font-style:italic; padding:20px 0;}
+
+.folder{position:relative;}
+.tab{
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:#fff;
+  padding:7px 22px 9px 14px;
+  margin-bottom:-1px;
+  margin-left:4px;
+  clip-path:polygon(0 0, 100% 0, 88% 100%, 0% 100%);
+}
+.folder-body{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-top:4px solid var(--ink);
+  border-radius:0 var(--radius) var(--radius) var(--radius);
+  padding:18px 20px 20px;
+}
+.folder-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.folder-meta{color:var(--ink-soft); font-size:12.5px;}
+.btn-ghost{
+  background:none;
+  border:1px solid var(--line);
+  color:var(--ink-soft);
+  font-size:12px;
+  font-family:'Inter',sans-serif;
+  padding:5px 10px;
+  border-radius:var(--radius);
+  cursor:pointer;
+}
+.btn-ghost:hover{border-color:var(--error); color:var(--error);}
+
+.dropzone{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  border:1.5px dashed var(--line);
+  border-radius:var(--radius);
+  padding:18px 14px;
+  color:var(--ink-soft);
+  font-size:13.5px;
+  cursor:pointer;
+  transition:border-color .15s, background .15s;
+  margin-bottom:12px;
+}
+.dropzone:hover, .dropzone.dragover{border-color:var(--terracotta); background:var(--paper-dim);}
+
+.file-list{display:flex; flex-direction:column; gap:0; margin-bottom:10px;}
+.file-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.file-row:last-child{border-bottom:none;}
+.file-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px;}
+.file-status{font-size:11.5px; white-space:nowrap;}
+.status-pendiente{color:var(--ink-soft);}
+.status-procesando{color:var(--mustard);}
+.status-listo{color:var(--success);}
+.status-listo_sin_texto{color:var(--ink-soft);}
+.status-error{color:var(--error);}
+.btn-link{
+  background:none; border:none; padding:0;
+  font-size:11.5px; color:var(--slate); cursor:pointer;
+  font-family:'Inter',sans-serif;
+  text-decoration:underline;
+  white-space:nowrap;
+}
+.btn-link:hover{color:var(--terracotta);}
+
+.folder-controls{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:10px 0 6px;
+  flex-wrap:wrap;
+}
+.status-line{font-size:12.5px; color:var(--ink-soft);}
+
+.results{margin-top:8px;}
+.results h4{
+  font-family:'Source Serif 4',serif;
+  font-size:14px;
+  margin:0 0 8px;
+  color:var(--ink-soft);
+  font-weight:600;
+}
+.results ul{margin:0; padding:0 0 0 18px;}
+.results li{margin-bottom:9px; font-size:14px;}
+.results .src{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color:var(--ink-soft);
+  margin-left:4px;
+}
+.no-recs{color:var(--ink-soft); font-size:12.5px; font-style:italic;}
+
+/* ---------- Footer ---------- */
+.global-footer{
+  margin-top:40px;
+  padding-top:18px;
+  border-top:2px solid var(--ink);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+}
+#globalStats{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft);}
+
+@media (max-width:560px){
+  .masthead h1{font-size:25px;}
+  .global-footer{flex-direction:column; align-items:flex-start;}
+  .new-category-form{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="masthead">
+    <div class="masthead-label">IPE · ARCHIVO DE RECOMENDACIONES</div>
+    <h1>Extractor de recomendaciones de política pública</h1>
+    <p class="subtitle">Organiza tus documentos del Instituto Peruano de Economía por tema. Cada bloque procesa sus propios archivos y separa solo las recomendaciones de política pública, citando el documento de origen.</p>
+    <div class="privacy-note">Los archivos se leen aquí en tu navegador. El texto extraído se envía a la API de Claude (Anthropic) únicamente para identificar las recomendaciones — no se sube ni almacena en ningún servidor.</div>
+  </header>
+
+  <section class="add-category">
+    <div class="quick-add" id="quickAdd"></div>
+    <form id="newCategoryForm" class="new-category-form">
+      <input id="newCategoryInput" type="text" placeholder="Nombre del bloque (p. ej. Pesca)" maxlength="40" />
+      <button type="submit" class="btn-primary">+ Agregar bloque</button>
+    </form>
+  </section>
+
+  <section id="categoriesContainer" class="categories"></section>
+
+  <footer class="global-footer">
+    <div id="globalStats"></div>
+    <button id="exportAllBtn" class="btn-primary">Descargar informe completo (.md)</button>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const PALETTE = ['#C1622D','#3D5A73','#69763A','#A1791E','#7A3B49','#2B6B66'];
+const SUGGESTED = ['Hidrocarburos','Minería','Laboral','Educación','Fiscal','Salud','Infraestructura','Macroeconomía'];
+
+let categories = [];
+let catCounter = 0;
+let fileCounter = 0;
+
+function uid(prefix){ return prefix + '_' + (++fileCounter) + '_' + Math.random().toString(36).slice(2,7); }
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- State helpers ---------------- */
+
+function addCategory(name){
+  name = name.trim();
+  if(!name) return;
+  if(categories.some(c => c.name.toLowerCase() === name.toLowerCase())) return;
+  categories.push({
+    id: uid('cat'),
+    name,
+    color: PALETTE[catCounter % PALETTE.length],
+    files: [],
+    processing: false
+  });
+  catCounter++;
+  render();
+}
+
+function findCat(catId){ return categories.find(c => c.id === catId); }
+function findFile(catId, fileId){ const c = findCat(catId); return c ? c.files.find(f => f.id === fileId) : null; }
+
+function addFilesToCategory(catId, fileListObj){
+  const cat = findCat(catId);
+  if(!cat) return;
+  Array.from(fileListObj).forEach(file => {
+    const lower = file.name.toLowerCase();
+    if(!lower.endsWith('.pdf') && !lower.endsWith('.docx')) return;
+    cat.files.push({
+      id: uid('file'),
+      file,
+      name: file.name,
+      status: 'pendiente',
+      error: null,
+      recommendations: []
+    });
+  });
+  render();
+}
+
+/* ---------------- File extraction ---------------- */
+
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function extractPdfText(arrayBuffer){
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = '';
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n\n';
+  }
+  return text;
+}
+
+async function extractDocxText(arrayBuffer){
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+}
+
+async function extractRecommendations(text, categoryName){
+  const truncated = text.length > 60000 ? text.slice(0, 60000) : text;
+  const prompt = `Eres un analista que revisa documentos del Instituto Peruano de Economía (IPE) sobre el tema "${categoryName}".
+
+Del siguiente texto, identifica ÚNICAMENTE las recomendaciones de política pública explícitas o propuestas concretas que se plantean (no incluyas diagnóstico, cifras de contexto ni descripciones del problema, solo la recomendación o propuesta en sí).
+
+Devuelve EXCLUSIVAMENTE un array JSON de strings, sin texto adicional, sin backticks ni explicaciones. Cada string debe ser una recomendación concisa (máximo 30 palabras), redactada en español. Si el texto no contiene recomendaciones explícitas, devuelve un array vacío: []
+
+TEXTO:
+"""
+${truncated}
+"""`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if(!response.ok){
+    throw new Error('Error de API (' + response.status + ')');
+  }
+  const data = await response.json();
+  const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  let cleaned = textBlocks.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  let arr;
+  try {
+    arr = JSON.parse(cleaned);
+  } catch(e){
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if(match){
+      try { arr = JSON.parse(match[0]); } catch(e2){ arr = []; }
+    } else {
+      arr = [];
+    }
+  }
+  if(!Array.isArray(arr)) arr = [];
+  return arr.filter(x => typeof x === 'string' && x.trim().length > 0);
+}
+
+/* ---------------- Processing queue ---------------- */
+
+async function processFile(cat, f){
+  f.status = 'procesando';
+  renderCategoryInPlace(cat.id);
+  try {
+    const buf = await readFileAsArrayBuffer(f.file);
+    const lower = f.name.toLowerCase();
+    const text = lower.endsWith('.pdf') ? await extractPdfText(buf) : await extractDocxText(buf);
+    if(!text || text.trim().length < 30){
+      f.recommendations = [];
+      f.status = 'listo_sin_texto';
+    } else {
+      const recs = await extractRecommendations(text, cat.name);
+      f.recommendations = recs;
+      f.status = 'listo';
+    }
+  } catch(e){
+    f.error = e.message || 'Error desconocido';
+    f.status = 'error';
+  }
+  renderCategoryInPlace(cat.id);
+  renderGlobalStats();
+}
+
+async function processCategory(catId){
+  const cat = findCat(catId);
+  if(!cat || cat.processing) return;
+  const pending = cat.files.filter(f => f.status === 'pendiente' || f.status === 'error');
+  if(pending.length === 0) return;
+  cat.processing = true;
+  renderCategoryInPlace(catId);
+  const concurrency = 3;
+  let idx = 0;
+  async function worker(){
+    while(idx < pending.length){
+      const f = pending[idx++];
+      await processFile(cat, f);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, worker));
+  cat.processing = false;
+  renderCategoryInPlace(catId);
+}
+
+/* ---------------- Rendering ---------------- */
+
+function statusLabel(f){
+  switch(f.status){
+    case 'pendiente': return '<span class="file-status status-pendiente">Pendiente</span>';
+    case 'procesando': return '<span class="file-status status-procesando">Procesando…</span>';
+    case 'listo': return '<span class="file-status status-listo">✓ Listo</span>';
+    case 'listo_sin_texto': return '<span class="file-status status-listo_sin_texto">Sin texto extraíble</span>';
+    case 'error': return '<span class="file-status status-error" title="' + escapeHtml(f.error||'') + '">⚠ Error</span>';
+    default: return '';
+  }
+}
+
+function fileRowHTML(catId, f){
+  return `<div class="file-row" data-file-id="${f.id}">
+    <span class="file-name mono" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+    ${statusLabel(f)}
+    ${f.status==='error' ? `<button class="btn-link" data-action="retry-file" data-cat-id="${catId}" data-file-id="${f.id}">Reintentar</button>` : ''}
+    <button class="btn-link" data-action="remove-file" data-cat-id="${catId}" data-file-id="${f.id}">Quitar</button>
+  </div>`;
+}
+
+function resultsHTML(cat){
+  const items = [];
+  cat.files.forEach(f => {
+    if(f.status === 'listo' && f.recommendations.length){
+      f.recommendations.forEach(rec => items.push({ rec, file: f.name }));
+    }
+  });
+  if(items.length === 0){
+    const anyProcessed = cat.files.some(f => f.status === 'listo' || f.status === 'listo_sin_texto');
+    if(anyProcessed){
+      return '<p class="no-recs">No se encontraron recomendaciones explícitas en los archivos procesados de este bloque.</p>';
+    }
+    return '';
+  }
+  return `<div class="results">
+    <h4>Recomendaciones encontradas (${items.length})</h4>
+    <ul>${items.map(it => `<li>${escapeHtml(it.rec)} <span class="src">— ${escapeHtml(it.file)}</span></li>`).join('')}</ul>
+  </div>`;
+}
+
+function categoryCardHTML(cat){
+  const pendingCount = cat.files.filter(f => f.status === 'pendiente' || f.status === 'error').length;
+  const processedCount = cat.files.filter(f => f.status === 'listo' || f.status === 'listo_sin_texto').length;
+  return `<div class="folder" data-cat-id="${cat.id}">
+    <div class="tab" style="background:${cat.color}">${escapeHtml(cat.name)}</div>
+    <div class="folder-body" style="border-top-color:${cat.color}">
+      <div class="folder-head">
+        <span class="folder-meta mono">${cat.files.length} archivo(s) · ${processedCount} procesado(s)</span>
+        <button class="btn-ghost" data-action="delete-cat" data-cat-id="${cat.id}">Eliminar bloque</button>
+      </div>
+      <label class="dropzone" data-action="dropzone" data-cat-id="${cat.id}">
+        <input type="file" multiple accept=".pdf,.docx" data-action="file-input" data-cat-id="${cat.id}" hidden />
+        <span>Arrastra archivos PDF/Word aquí, o haz clic para elegir</span>
+      </label>
+      <div class="file-list">${cat.files.map(f => fileRowHTML(cat.id, f)).join('')}</div>
+      ${cat.files.length ? `<div class="folder-controls">
+        <button class="btn-primary" data-action="process-cat" data-cat-id="${cat.id}" ${cat.processing || pendingCount===0 ? 'disabled' : ''}>
+          ${cat.processing ? 'Procesando…' : (pendingCount===0 ? 'Bloque procesado' : 'Procesar bloque (' + pendingCount + ')')}
+        </button>
+      </div>` : ''}
+      ${resultsHTML(cat)}
+    </div>
+  </div>`;
+}
+
+function renderQuickAdd(){
+  const el = document.getElementById('quickAdd');
+  el.innerHTML = SUGGESTED.map(name => {
+    const exists = categories.some(c => c.name.toLowerCase() === name.toLowerCase());
+    return `<button class="chip" data-action="quick-add" data-name="${escapeHtml(name)}" ${exists?'disabled':''}>${exists?'✓ ':'+ '}${name}</button>`;
+  }).join('');
+}
+
+function renderGlobalStats(){
+  const totalFiles = categories.reduce((s,c) => s + c.files.length, 0);
+  const totalProcessed = categories.reduce((s,c) => s + c.files.filter(f=>f.status==='listo'||f.status==='listo_sin_texto').length, 0);
+  const totalRecs = categories.reduce((s,c) => s + c.files.reduce((s2,f)=>s2 + (f.recommendations?f.recommendations.length:0),0), 0);
+  document.getElementById('globalStats').textContent =
+    `${categories.length} bloque(s) · ${totalFiles} archivo(s) · ${totalProcessed} procesado(s) · ${totalRecs} recomendación(es)`;
+}
+
+function renderCategoryInPlace(catId){
+  const cat = findCat(catId);
+  if(!cat) return;
+  const node = document.querySelector(`.folder[data-cat-id="${catId}"]`);
+  if(node){
+    node.outerHTML = categoryCardHTML(cat);
+  }
+  renderGlobalStats();
+}
+
+function render(){
+  renderQuickAdd();
+  const container = document.getElementById('categoriesContainer');
+  container.innerHTML = categories.length
+    ? categories.map(categoryCardHTML).join('')
+    : '<p class="empty-state">Agrega un bloque arriba para empezar (por ejemplo "Hidrocarburos" o "Educación") y luego sube los documentos relacionados.</p>';
+  renderGlobalStats();
+}
+
+/* ---------------- Export ---------------- */
+
+function buildMarkdownReport(){
+  const lines = [];
+  lines.push('# Recomendaciones de política pública — IPE');
+  lines.push('');
+  lines.push('_Generado a partir de documentos procesados con el extractor de recomendaciones._');
+  lines.push('');
+  categories.forEach(cat => {
+    lines.push(`## ${cat.name}`);
+    lines.push('');
+    const items = [];
+    cat.files.forEach(f => {
+      if(f.status === 'listo' && f.recommendations.length){
+        f.recommendations.forEach(rec => items.push({ rec, file: f.name }));
+      }
+    });
+    if(items.length === 0){
+      lines.push('_Sin recomendaciones registradas en este bloque._');
+    } else {
+      items.forEach(it => lines.push(`- ${it.rec} _(${it.file})_`));
+    }
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function exportAll(){
+  const md = buildMarkdownReport();
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'recomendaciones_ipe.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- Events ---------------- */
+
+document.getElementById('newCategoryForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = document.getElementById('newCategoryInput');
+  addCategory(input.value);
+  input.value = '';
+});
+
+document.getElementById('exportAllBtn').addEventListener('click', exportAll);
+
+const app = document.getElementById('app');
+
+app.addEventListener('click', e => {
+  const quickBtn = e.target.closest('[data-action="quick-add"]');
+  if(quickBtn){ addCategory(quickBtn.dataset.name); return; }
+
+  const delCatBtn = e.target.closest('[data-action="delete-cat"]');
+  if(delCatBtn){
+    const catId = delCatBtn.dataset.catId;
+    const cat = findCat(catId);
+    if(cat && (cat.files.length === 0 || confirm(`¿Eliminar el bloque "${cat.name}" y sus ${cat.files.length} archivo(s)?`))){
+      categories = categories.filter(c => c.id !== catId);
+      render();
+    }
+    return;
+  }
+
+  const processBtn = e.target.closest('[data-action="process-cat"]');
+  if(processBtn && !processBtn.disabled){
+    processCategory(processBtn.dataset.catId);
+    return;
+  }
+
+  const retryBtn = e.target.closest('[data-action="retry-file"]');
+  if(retryBtn){
+    const cat = findCat(retryBtn.dataset.catId);
+    const f = findFile(retryBtn.dataset.catId, retryBtn.dataset.fileId);
+    if(cat && f){ f.status = 'pendiente'; f.error = null; processFile(cat, f); }
+    return;
+  }
+
+  const removeBtn = e.target.closest('[data-action="remove-file"]');
+  if(removeBtn){
+    const cat = findCat(removeBtn.dataset.catId);
+    if(cat){
+      cat.files = cat.files.filter(f => f.id !== removeBtn.dataset.fileId);
+      renderCategoryInPlace(cat.id);
+    }
+    return;
+  }
+
+  const dropzone = e.target.closest('[data-action="dropzone"]');
+  if(dropzone && e.target.tagName !== 'INPUT'){
+    const input = dropzone.querySelector('input[type="file"]');
+    if(input) input.click();
+  }
+});
+
+app.addEventListener('change', e => {
+  const input = e.target.closest('[data-action="file-input"]');
+  if(input && input.files && input.files.length){
+    addFilesToCategory(input.dataset.catId, input.files);
+  }
+});
+
+app.addEventListener('dragover', e => {
+  const dz = e.target.closest('[data-action="dropzone"]');
+  if(dz){ e.preventDefault(); dz.classList.add('dragover'); }
+});
+app.addEventListener('dragleave', e => {
+  const dz = e.target.closest('[data-action="dropzone"]');
+  if(dz){ dz.classList.remove('dragover'); }
+});
+app.addEventListener('drop', e => {
+  const dz = e.target.closest('[data-action="dropzone"]');
+  if(dz){
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+      addFilesToCategory(dz.dataset.catId, e.dataTransfer.files);
+    }
+  }
+});
+
+/* ---------------- Init ---------------- */
+render();
+</script>
+</body>
+</html>
