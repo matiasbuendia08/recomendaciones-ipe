@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IPE · Buscador de recomendaciones</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --paper:#F6F2E9;
+  --paper-dim:#EFE9D9;
+  --card:#FBF8F1;
+  --ink:#241F1A;
+  --ink-soft:#6B6259;
+  --line:#DCD2BA;
+  --terracotta:#C1622D;
+  --slate:#3D5A73;
+  --olive:#69763A;
+  --mustard:#A1791E;
+  --wine:#7A3B49;
+  --teal:#2B6B66;
+  --success:#3F7A52;
+  --error:#A33B3B;
+  --radius:2px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--paper); color:var(--ink); font-family:'Inter',sans-serif; font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.app{max-width:920px; margin:0 auto; padding:32px 20px 80px;}
+
+/* Header */
+.masthead{border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:22px;}
+.masthead-label{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; color:var(--terracotta); font-weight:600; margin-bottom:8px;}
+.masthead h1{font-family:'Source Serif 4',serif; font-size:30px; font-weight:700; margin:0 0 10px; line-height:1.15;}
+.masthead .subtitle{color:var(--ink-soft); font-size:14.5px; max-width:680px; margin:0 0 14px;}
+
+.note-box{font-size:12.5px; color:var(--ink-soft); padding:10px 13px; max-width:680px; margin-bottom:10px;}
+.note-box.privacy{background:var(--paper-dim); border-left:3px solid var(--slate);}
+.note-box.method{background:var(--paper-dim); border-left:3px solid var(--terracotta);}
+.note-box strong{color:var(--ink);}
+
+/* Section titles */
+.section-title{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--ink-soft); font-weight:600;
+  margin:36px 0 14px; padding-bottom:6px; border-bottom:1px solid var(--line);
+}
+
+/* Dropzone */
+.dropzone{
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  border:1.5px dashed var(--line); border-radius:var(--radius);
+  padding:22px 14px; color:var(--ink-soft); font-size:13.5px; cursor:pointer;
+  transition:border-color .15s, background .15s; margin-bottom:16px; background:var(--card);
+}
+.dropzone:hover, .dropzone.dragover{border-color:var(--terracotta); background:var(--paper-dim);}
+
+/* Files table */
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--card);}
+.file-table{width:100%; border-collapse:collapse; min-width:680px;}
+.file-table th{
+  font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--ink-soft); text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+.file-table td{padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:middle;}
+.file-table tr:last-child td{border-bottom:none;}
+.file-name{font-size:12.5px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
+.tag-input, .extra-input{
+  width:100%; font-family:'Inter',sans-serif; font-size:12.5px;
+  padding:5px 7px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; color:var(--ink);
+}
+.tag-input:focus, .extra-input:focus{outline:none; border-color:var(--ink);}
+.status-pendiente{color:var(--ink-soft);}
+.status-procesando{color:var(--mustard);}
+.status-listo{color:var(--success);}
+.status-sin_texto{color:var(--ink-soft);}
+.status-error{color:var(--error);}
+.recs-count{color:var(--ink-soft); font-size:11.5px;}
+.btn-link{background:none; border:none; padding:0; font-size:11.5px; color:var(--slate); cursor:pointer; text-decoration:underline; white-space:nowrap;}
+.btn-link:hover{color:var(--terracotta);}
+.btn-link.danger{color:var(--error);}
+.empty-state{color:var(--ink-soft); font-style:italic; padding:14px;}
+
+/* Filter bar */
+.filter-bar{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:16px;}
+.filter-bar select{
+  font-family:'Inter',sans-serif; font-size:13.5px; padding:8px 10px;
+  border:1px solid var(--line); border-radius:var(--radius); background:var(--card); color:var(--ink);
+}
+.chip-filter{display:flex; flex-wrap:wrap; gap:6px;}
+.chip-toggle{
+  font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  background:var(--card); border:1px solid var(--line); color:var(--ink-soft);
+  padding:5px 11px; border-radius:20px; cursor:pointer;
+}
+.chip-toggle.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+.btn-primary{
+  font-family:'Inter',sans-serif; font-weight:600; font-size:13px; background:var(--ink); color:var(--paper);
+  border:none; padding:9px 16px; border-radius:var(--radius); cursor:pointer; white-space:nowrap;
+}
+.btn-primary:hover{background:var(--terracotta);}
+
+/* Results */
+.tema-group{margin-bottom:26px;}
+.tema-group h3{
+  font-family:'Source Serif 4',serif; font-size:18px; margin:0 0 4px;
+  display:inline-block; padding:3px 12px; color:#fff; border-radius:2px;
+}
+.doc-block{margin:14px 0 0 4px;}
+.doc-block .doc-name{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; display:block;}
+.doc-block .extra-badges{margin-left:8px;}
+.badge{
+  font-family:'JetBrains Mono',monospace; font-size:10px; background:var(--paper-dim); color:var(--ink-soft);
+  padding:1px 6px; border-radius:10px; margin-left:4px;
+}
+.results ul{margin:0; padding:0 0 0 18px;}
+.results li{margin-bottom:7px; font-size:14px;}
+.no-recs{color:var(--ink-soft); font-size:12.5px; font-style:italic; margin:6px 0 0 4px;}
+
+.global-footer{margin-top:30px; padding-top:14px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft);}
+
+@media (max-width:560px){
+  .masthead h1{font-size:24px;}
+  .filter-bar{flex-direction:column; align-items:stretch;}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="masthead">
+    <div class="masthead-label">IPE · ARCHIVO DE RECOMENDACIONES</div>
+    <h1>Buscador de recomendaciones de política pública</h1>
+    <p class="subtitle">Sube tus documentos del IPE, etiquétalos por tema, y luego filtra para ver solo las frases que parecen recomendaciones de política, junto con el documento de donde salen.</p>
+    <div class="note-box privacy"><strong>Privacidad:</strong> todo ocurre en tu navegador. No se sube ningún archivo ni texto a internet — funciona incluso sin conexión, una vez cargada la página.</div>
+    <div class="note-box method"><strong>Cómo funciona esto:</strong> esta versión NO usa inteligencia artificial. Busca por palabras clave ("recomendación", "se debería", "es necesario", etc.) y muestra las frases que ya tienen forma de recomendación, tal como aparecen en el texto original. Puede omitir recomendaciones redactadas de forma poco explícita, o incluir alguna frase que no lo sea realmente — revisa siempre el documento fuente antes de citar.</div>
+  </header>
+
+  <section>
+    <h2 class="section-title">1 · Subir y etiquetar archivos</h2>
+    <label class="dropzone" id="globalDropzone">
+      <input type="file" id="globalFileInput" multiple accept=".pdf,.docx" hidden />
+      <span>Arrastra archivos PDF/Word aquí, o haz clic para elegir (puedes subir varios a la vez)</span>
+    </label>
+    <div class="table-wrap">
+      <table class="file-table">
+        <thead>
+          <tr><th>Archivo</th><th>Tema</th><th>Etiquetas extra</th><th>Estado</th><th>Recom.</th><th></th></tr>
+        </thead>
+        <tbody id="filesTableBody"></tbody>
+      </table>
+      <div id="filesEmptyState" class="empty-state">Aún no has subido archivos.</div>
+    </div>
+  </section>
+
+  <datalist id="temaOptions"></datalist>
+
+  <section>
+    <h2 class="section-title">2 · Buscar recomendaciones</h2>
+    <div class="filter-bar">
+      <select id="temaFilter"></select>
+      <div class="chip-filter" id="extraTagFilter"></div>
+      <button class="btn-primary" id="exportFilteredBtn">Descargar resultados (.md)</button>
+    </div>
+    <div id="searchResults" class="results"></div>
+  </section>
+
+  <footer class="global-footer" id="globalStats"></footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const PALETTE = ['#C1622D','#3D5A73','#69763A','#A1791E','#7A3B49','#2B6B66'];
+const SUGGESTED_TEMAS = ['Hidrocarburos','Minería','Laboral','Educación','Fiscal','Salud','Infraestructura','Macroeconomía'];
+
+let temas = [...SUGGESTED_TEMAS];
+let files = [];
+let counter = 0;
+let selectedTema = '';
+let selectedExtra = new Set();
+
+function uid(p){ return p + '_' + (++counter) + '_' + Math.random().toString(36).slice(2,7); }
+function escapeHtml(str){ return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function temaColor(tema){
+  if(!tema) return '#8A8378';
+  let idx = temas.indexOf(tema);
+  if(idx < 0) idx = 0;
+  return PALETTE[idx % PALETTE.length];
+}
+
+/* ---------------- Heuristic extraction (sin IA) ---------------- */
+
+const HEADING_RE = /(recomendaci[oó]n(es)?|propuestas? de pol[ií]tica|sugerencias? de pol[ií]tica|pol[ií]ticas? recomendadas?)/gi;
+const MARKER_RE = /\b(se recomienda|recomendamos|se sugiere|sugerimos|se propone|proponemos|deber[ií]an?|es necesario|es indispensable|es urgente|resulta necesario|resulta indispensable|conviene|urge\b|hace falta|es preciso|es fundamental|se debe\b|debe[r]?[ií]a\b|instamos a|exhortamos a)\b/i;
+
+function cleanSentence(s){
+  s = s.replace(/^[\-\•\d\.\)\s]+/, '').trim();
+  if(s.length > 240){
+    s = s.slice(0,237).replace(/\s+\S*$/, '') + '…';
+  }
+  if(s) s = s.charAt(0).toUpperCase() + s.slice(1);
+  return s;
+}
+
+function extractCandidates(text){
+  const norm = text.replace(/\s+/g, ' ').trim();
+  const zones = [];
+  let hm;
+  HEADING_RE.lastIndex = 0;
+  while((hm = HEADING_RE.exec(norm))){ zones.push([hm.index, hm.index + 3500]); }
+
+  const sentRe = /[^.!?;]+[.!?;]/g;
+  const candidates = [];
+  const seen = new Set();
+  let sm;
+  while((sm = sentRe.exec(norm))){
+    const s = sm[0].trim();
+    if(s.length < 25 || s.length > 420) continue;
+    const idx = sm.index;
+    const nearHeading = zones.some(([a,b]) => idx >= a && idx <= b);
+    const hasMarker = MARKER_RE.test(s);
+    if(nearHeading || hasMarker){
+      const key = s.toLowerCase().slice(0,80);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      candidates.push({ text: cleanSentence(s), priority: (nearHeading?1:0) + (hasMarker?1:0) });
+    }
+  }
+  candidates.sort((a,b) => b.priority - a.priority);
+  return candidates.slice(0,20).map(c => c.text);
+}
+
+/* ---------------- File reading ---------------- */
+
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+async function extractPdfText(buf){
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it=>it.str).join(' ') + '\n\n';
+  }
+  return text;
+}
+async function extractDocxText(buf){
+  const result = await mammoth.extractRawText({ arrayBuffer: buf });
+  return result.value;
+}
+
+/* ---------------- Processing queue (CPU-bound, no network) ---------------- */
+
+let queue = [];
+let workersRunning = 0;
+const MAX_WORKERS = 3;
+
+function enqueue(f){
+  queue.push(f);
+  pumpQueue();
+}
+function pumpQueue(){
+  while(workersRunning < MAX_WORKERS && queue.length){
+    const f = queue.shift();
+    workersRunning++;
+    processFile(f).finally(() => { workersRunning--; pumpQueue(); });
+  }
+}
+async function processFile(f){
+  f.status = 'procesando';
+  renderAll();
+  try {
+    const buf = await readFileAsArrayBuffer(f.file);
+    const lower = f.name.toLowerCase();
+    const text = lower.endsWith('.pdf') ? await extractPdfText(buf) : await extractDocxText(buf);
+    if(!text || text.trim().length < 30){
+      f.status = 'sin_texto';
+      f.recs = [];
+    } else {
+      f.recs = extractCandidates(text);
+      f.status = 'listo';
+    }
+  } catch(e){
+    f.status = 'error';
+    f.error = e.message || 'Error desconocido';
+  }
+  renderAll();
+}
+
+function addFiles(fileListObj){
+  Array.from(fileListObj).forEach(file => {
+    const lower = file.name.toLowerCase();
+    if(!lower.endsWith('.pdf') && !lower.endsWith('.docx')) return;
+    const f = { id: uid('f'), file, name: file.name, tema: '', extraTags: [], status: 'pendiente', error: null, recs: [] };
+    files.push(f);
+    enqueue(f);
+  });
+  renderAll();
+}
+
+/* ---------------- Rendering: upload table ---------------- */
+
+function statusLabel(f){
+  switch(f.status){
+    case 'pendiente': return '<span class="status-pendiente">Pendiente</span>';
+    case 'procesando': return '<span class="status-procesando">Procesando…</span>';
+    case 'listo': return '<span class="status-listo">✓ Listo</span>';
+    case 'sin_texto': return '<span class="status-sin_texto">Sin texto</span>';
+    case 'error': return `<span class="status-error" title="${escapeHtml(f.error||'')}">⚠ Error</span>`;
+    default: return '';
+  }
+}
+
+function renderTemaOptionsDatalist(){
+  document.getElementById('temaOptions').innerHTML = temas.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
+function renderFilesTable(){
+  const body = document.getElementById('filesTableBody');
+  const empty = document.getElementById('filesEmptyState');
+  if(files.length === 0){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  body.innerHTML = files.map(f => `
+    <tr data-file-id="${f.id}">
+      <td><span class="file-name mono" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span></td>
+      <td><input class="tag-input" list="temaOptions" placeholder="Elegir o escribir tema" value="${escapeHtml(f.tema)}" data-action="set-tema" data-file-id="${f.id}" /></td>
+      <td><input class="extra-input" placeholder="opcional: año, tipo…" value="${escapeHtml(f.extraTags.join(', '))}" data-action="set-extra" data-file-id="${f.id}" /></td>
+      <td>${statusLabel(f)}</td>
+      <td class="recs-count mono">${f.status==='listo' ? f.recs.length : '—'}</td>
+      <td>
+        ${f.status==='error' ? `<button class="btn-link" data-action="retry-file" data-file-id="${f.id}">Reintentar</button> ` : ''}
+        <button class="btn-link danger" data-action="remove-file" data-file-id="${f.id}">Quitar</button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ---------------- Rendering: search/filter ---------------- */
+
+function renderTemaFilter(){
+  const used = [...new Set(files.filter(f=>f.tema).map(f=>f.tema))];
+  const sel = document.getElementById('temaFilter');
+  const prev = selectedTema;
+  sel.innerHTML = `<option value="">Todos los temas</option>` + used.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  if(used.includes(prev)) sel.value = prev; else { selectedTema = ''; sel.value=''; }
+}
+
+function renderExtraTagFilter(){
+  const all = new Set();
+  files.forEach(f => (f.extraTags||[]).forEach(t => all.add(t.toLowerCase())));
+  const el = document.getElementById('extraTagFilter');
+  if(all.size === 0){ el.innerHTML=''; return; }
+  el.innerHTML = [...all].sort().map(t =>
+    `<button type="button" class="chip-toggle ${selectedExtra.has(t)?'active':''}" data-action="toggle-extra" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`
+  ).join('');
+}
+
+function matchingFiles(){
+  return files.filter(f => {
+    if(f.status !== 'listo') return false;
+    if(selectedTema && f.tema !== selectedTema) return false;
+    if(selectedExtra.size > 0){
+      const tagsLower = (f.extraTags||[]).map(t=>t.toLowerCase());
+      if(![...selectedExtra].some(t => tagsLower.includes(t))) return false;
+    }
+    return true;
+  });
+}
+
+function renderSearchResults(){
+  const matches = matchingFiles();
+  const container = document.getElementById('searchResults');
+  if(matches.length === 0){
+    container.innerHTML = '<p class="empty-state">No hay archivos procesados que coincidan con este filtro todavía.</p>';
+    return;
+  }
+  if(selectedTema){
+    container.innerHTML = docsBlockHTML(matches);
+  } else {
+    const groups = {};
+    matches.forEach(f => { const k = f.tema || '(sin tema)'; (groups[k] = groups[k]||[]).push(f); });
+    container.innerHTML = Object.keys(groups).map(tema => `
+      <div class="tema-group">
+        <h3 style="background:${temaColor(tema==='(sin tema)'?null:tema)}">${escapeHtml(tema)}</h3>
+        ${docsBlockHTML(groups[tema])}
+      </div>`).join('');
+  }
+}
+
+function docsBlockHTML(filesArr){
+  return filesArr.map(f => `
+    <div class="doc-block">
+      <span class="doc-name">${escapeHtml(f.name)}${(f.extraTags||[]).map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join('')}</span>
+      ${f.recs.length
+        ? `<ul>${f.recs.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+        : `<p class="no-recs">No se detectaron frases con forma de recomendación en este documento.</p>`}
+    </div>`).join('');
+}
+
+function renderGlobalStats(){
+  const total = files.length;
+  const procesados = files.filter(f=>f.status==='listo'||f.status==='sin_texto').length;
+  const totalRecs = files.reduce((s,f)=>s+(f.recs?f.recs.length:0),0);
+  document.getElementById('globalStats').textContent = `${total} archivo(s) · ${procesados} procesado(s) · ${totalRecs} frase(s) candidata(s) encontradas`;
+}
+
+function renderAll(){
+  renderTemaOptionsDatalist();
+  renderFilesTable();
+  renderTemaFilter();
+  renderExtraTagFilter();
+  renderSearchResults();
+  renderGlobalStats();
+}
+
+/* ---------------- Export ---------------- */
+
+function buildMarkdownReport(){
+  const matches = matchingFiles();
+  const lines = ['# Recomendaciones de política pública — IPE', ''];
+  const groups = {};
+  matches.forEach(f => { const k = f.tema || '(sin tema)'; (groups[k]=groups[k]||[]).push(f); });
+  Object.keys(groups).forEach(tema => {
+    lines.push(`## ${tema}`, '');
+    groups[tema].forEach(f => {
+      lines.push(`**${f.name}**${f.extraTags.length ? ' _(' + f.extraTags.join(', ') + ')_' : ''}`);
+      if(f.recs.length){
+        f.recs.forEach(r => lines.push(`- ${r}`));
+      } else {
+        lines.push('_Sin frases candidatas detectadas._');
+      }
+      lines.push('');
+    });
+  });
+  return lines.join('\n');
+}
+function exportFiltered(){
+  const md = buildMarkdownReport();
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'recomendaciones_ipe.md';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- Events ---------------- */
+
+const app = document.getElementById('app');
+const globalDropzone = document.getElementById('globalDropzone');
+const globalFileInput = document.getElementById('globalFileInput');
+
+globalDropzone.addEventListener('click', () => globalFileInput.click());
+globalFileInput.addEventListener('change', e => { if(e.target.files.length) addFiles(e.target.files); e.target.value=''; });
+globalDropzone.addEventListener('dragover', e => { e.preventDefault(); globalDropzone.classList.add('dragover'); });
+globalDropzone.addEventListener('dragleave', () => globalDropzone.classList.remove('dragover'));
+globalDropzone.addEventListener('drop', e => {
+  e.preventDefault(); globalDropzone.classList.remove('dragover');
+  if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+
+document.getElementById('exportFilteredBtn').addEventListener('click', exportFiltered);
+document.getElementById('temaFilter').addEventListener('change', e => { selectedTema = e.target.value; renderSearchResults(); });
+
+app.addEventListener('change', e => {
+  const temaInput = e.target.closest('[data-action="set-tema"]');
+  if(temaInput){
+    const f = files.find(x => x.id === temaInput.dataset.fileId);
+    if(f){
+      const val = temaInput.value.trim();
+      f.tema = val;
+      if(val && !temas.includes(val)) temas.push(val);
+      renderAll();
+    }
+    return;
+  }
+  const extraInput = e.target.closest('[data-action="set-extra"]');
+  if(extraInput){
+    const f = files.find(x => x.id === extraInput.dataset.fileId);
+    if(f){
+      f.extraTags = extraInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      renderAll();
+    }
+    return;
+  }
+});
+
+app.addEventListener('click', e => {
+  const retry = e.target.closest('[data-action="retry-file"]');
+  if(retry){
+    const f = files.find(x => x.id === retry.dataset.fileId);
+    if(f){ f.status='pendiente'; f.error=null; enqueue(f); }
+    return;
+  }
+  const remove = e.target.closest('[data-action="remove-file"]');
+  if(remove){
+    files = files.filter(x => x.id !== remove.dataset.fileId);
+    renderAll();
+    return;
+  }
+  const toggleExtra = e.target.closest('[data-action="toggle-extra"]');
+  if(toggleExtra){
+    const tag = toggleExtra.dataset.tag;
+    if(selectedExtra.has(tag)) selectedExtra.delete(tag); else selectedExtra.add(tag);
+    renderExtraTagFilter();
+    renderSearchResults();
+    return;
+  }
+});
+
+/* ---------------- Init ---------------- */
+renderAll();
+</script>
+</body>
+</html>
