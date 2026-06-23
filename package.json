@@ -1,0 +1,14 @@
+{
+  "name": "ipe-recomendaciones-procesador",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Script local para extraer recomendaciones de política pública de documentos del IPE usando la API gratuita de Gemini.",
+  "main": "procesar.js",
+  "scripts": {
+    "procesar": "node procesar.js"
+  },
+  "dependencies": {
+    "mammoth": "^1.7.2",
+    "pdf-parse": "^1.1.1"
+  }
+}

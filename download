@@ -1,0 +1,11 @@
+# Dependencias instaladas por npm
+node_modules/
+
+# Tus documentos originales (no hace falta subirlos al repo público)
+documentos/
+
+# Variables de entorno / claves
+.env
+
+# Archivos del sistema
+.DS_Store

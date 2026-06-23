@@ -1,47 +1,99 @@
-# Buscador de recomendaciones de política pública — IPE
+# Recomendaciones de política pública — IPE
 
-Herramienta web de una sola página (`index.html`) para subir informes del Instituto Peruano de Economía (Word y PDF), etiquetarlos por tema, y filtrar las frases que tienen forma de recomendación de política pública, junto con el documento de origen.
+Página pública que muestra las recomendaciones de política pública identificadas en los informes del Instituto Peruano de Economía (IPE), organizadas por tema y buscables por palabra clave.
 
-**No usa ninguna API ni servidor.** Todo el procesamiento —lectura de archivos, extracción de texto y búsqueda de recomendaciones— ocurre en el navegador del usuario. Por eso se puede alojar como página estática en GitHub Pages sin configuración adicional ni claves de ningún tipo.
+El proyecto tiene **dos partes separadas**:
+
+1. **Procesamiento** (`procesar.js`) — un script que corres en tu propia computadora, las veces que quieras, para convertir tus PDF/Word en un archivo de datos (`data/recomendaciones.json`). Usa tu propia clave **gratuita** de la API de Gemini (Google). No depende de nadie más una vez configurado.
+2. **Página pública** (`index.html`) — lo que ve cualquier visitante. Es 100% estática: solo lee `data/recomendaciones.json` y lo muestra. No tiene botón de subir archivos, no necesita ninguna clave, no le cuesta nada a nadie que la visite.
+
+## Antes de empezar: consigue tu clave gratuita de Gemini
+
+1. Entra a [Google AI Studio](https://aistudio.google.com/apikey) con tu cuenta de Google.
+2. Genera una API key (no pide tarjeta de crédito).
+3. Guárdala en un lugar seguro — la vas a usar solo en tu computadora, nunca se sube a GitHub.
+
+El nivel gratuito de Gemini (modelos "Flash") permite alrededor de **1,500 solicitudes por día**, muy por encima de lo que necesitas para 50+ documentos. Los límites de Google cambian de tanto en tanto — si en algún momento el script falla con un error de cuota, revisa los límites vigentes en [ai.google.dev/gemini-api/docs/rate-limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+
+## Parte 1 — Procesar tus documentos (en tu computadora)
+
+### Requisitos
+
+- [Node.js](https://nodejs.org/) versión 18 o superior instalado en tu computadora.
+
+### Pasos
+
+1. Descarga/clona esta carpeta en tu computadora.
+2. Instala las dependencias (solo la primera vez):
+   ```
+   npm install
+   ```
+3. Organiza tus documentos en una carpeta llamada `documentos/`, con una subcarpeta por cada tema. El nombre de la subcarpeta es el tema:
+   ```
+   documentos/
+     Laboral/
+       informe1.pdf
+       informe2.docx
+     Hidrocarburos/
+       informe3.pdf
+     Educacion/
+       informe4.pdf
+   ```
+4. Corre el script, pasando tu clave de Gemini como variable de entorno:
+
+   **macOS / Linux:**
+   ```
+   GEMINI_API_KEY=tu_clave_aqui node procesar.js
+   ```
+
+   **Windows (PowerShell):**
+   ```
+   $env:GEMINI_API_KEY="tu_clave_aqui"; node procesar.js
+   ```
+
+   **Windows (cmd):**
+   ```
+   set GEMINI_API_KEY=tu_clave_aqui && node procesar.js
+   ```
+
+5. Espera a que termine — verás el progreso archivo por archivo en la terminal (con 50+ documentos, toma varios minutos, ya que el script espera unos segundos entre cada uno para respetar el límite gratuito).
+6. Al terminar, se genera/actualiza `data/recomendaciones.json`. Ese es el archivo que alimenta la página pública.
+
+Puedes volver a correr este script cuando quieras — por ejemplo, cada vez que agregues documentos nuevos a las carpetas de `documentos/`. Vuelve a procesar todo y sobrescribe `data/recomendaciones.json`.
+
+> Nota: `documentos/` está en `.gitignore` a propósito — tus archivos originales se quedan solo en tu computadora, no se suben a GitHub.
+
+## Parte 2 — Publicar la página pública en GitHub Pages
+
+1. Crea un repositorio nuevo en GitHub (público).
+2. Sube **`index.html`**, la carpeta **`data/`** (con el `recomendaciones.json` ya generado) y este **`README.md`** a la raíz del repositorio. No subas `documentos/`, `node_modules/` ni tu clave — el `.gitignore` ya los excluye si usas `git`.
+3. Ve a **Settings → Pages**.
+4. En "Build and deployment", elige **Deploy from a branch**, selecciona la rama `main` y la carpeta `/ (root)`.
+5. Guarda. GitHub te da una URL como `https://tu-usuario.github.io/tu-repositorio/` (tarda 1-2 minutos en activarse la primera vez).
+6. Cualquiera con ese link puede ver las recomendaciones — nadie necesita subir nada ni tener ninguna clave.
+
+### Para actualizar la página más adelante
+
+Cuando proceses documentos nuevos (Parte 1), solo necesitas volver a subir el `data/recomendaciones.json` actualizado a GitHub (reemplazando el anterior). La página pública se actualiza sola, sin tocar nada más.
 
 ## Contenido del repositorio
 
-- `index.html` — la aplicación completa (HTML, CSS y JavaScript en un solo archivo). Carga dos librerías externas vía CDN para leer archivos:
-  - [pdf.js](https://mozilla.github.io/pdf.js/) (Mozilla) para extraer texto de PDF.
-  - [mammoth.js](https://github.com/mwilliamson/mammoth.js) para extraer texto de Word (`.docx`).
-- `README.md` — este archivo.
+| Archivo | Para qué sirve | ¿Se sube a GitHub? |
+|---|---|---|
+| `index.html` | Página pública que muestra las recomendaciones | Sí |
+| `data/recomendaciones.json` | Los datos que muestra la página (generados por `procesar.js`) | Sí |
+| `procesar.js` | Script que genera `data/recomendaciones.json` a partir de tus documentos | Sí (es solo código, no contiene tu clave) |
+| `package.json` | Lista de dependencias del script | Sí |
+| `.gitignore` | Evita subir `documentos/`, `node_modules/` y tu clave | Sí |
+| `.env.example` | Plantilla de referencia para tu clave (no es tu clave real) | Sí |
+| `documentos/` | Tus PDF/Word originales | **No** |
+| `node_modules/` | Dependencias instaladas por npm | **No** |
 
-No hay paso de build ni dependencias que instalar: es HTML estático.
+## Cómo funciona la extracción de recomendaciones
 
-## Cómo publicarlo en GitHub Pages
+`procesar.js` lee el texto de cada PDF/Word y le pide a un modelo de IA (Gemini, en su nivel gratuito) que identifique y resuma únicamente las recomendaciones de política pública del documento — no el diagnóstico ni las cifras de contexto. El resultado son frases cortas y sintetizadas, cada una junto al nombre del documento de origen.
 
-1. Crea un repositorio nuevo en GitHub (puede ser público o privado; si es privado necesitas plan de pago para Pages, así que lo más simple es público).
-2. Sube `index.html` y `README.md` a la raíz del repositorio (arrastrándolos en la interfaz web de GitHub, o con `git add` / `git commit` / `git push` si usas la terminal).
-3. Ve a **Settings → Pages** dentro del repositorio.
-4. En "Build and deployment", elige **Deploy from a branch**, selecciona la rama `main` (o `master`) y la carpeta `/ (root)`.
-5. Guarda. GitHub te dará una URL parecida a `https://tu-usuario.github.io/tu-repositorio/` (tarda 1-2 minutos en activarse la primera vez).
-6. Listo: cualquiera con ese link puede usar la herramienta directamente desde su navegador.
-
-## Cómo se usa
-
-1. **Subir y etiquetar**: arrastra tus archivos `.pdf` o `.docx` al cuadro de carga. Se procesan automáticamente al subirlos. Para cada archivo puedes escribir:
-   - **Tema**: la categoría del documento (hay sugerencias predefinidas — Hidrocarburos, Minería, Laboral, Educación, Fiscal, Salud, Infraestructura, Macroeconomía — y puedes escribir cualquier otro tema nuevo).
-   - **Etiquetas extra** (opcional): cualquier dato adicional que te sirva para filtrar después, separado por comas (por ejemplo: `2023, informe trimestral`).
-2. **Buscar recomendaciones**: selecciona un tema en el filtro (o "Todos los temas" para verlos agrupados) y, si quieres, activa alguna etiqueta extra. Verás las frases candidatas a recomendación de cada documento que coincide con el filtro.
-3. **Descargar resultados**: el botón "Descargar resultados (.md)" exporta exactamente lo que está filtrado en pantalla, en un archivo Markdown.
-
-## Cómo funciona la búsqueda (importante)
-
-Esta herramienta **no usa inteligencia artificial**. La detección de recomendaciones es por reglas y palabras clave:
-
-- Ubica las zonas del texto cercanas a encabezados como "Recomendaciones", "se recomienda", "propuestas de política", etc.
-- Dentro de esas zonas, y en el resto del documento, identifica oraciones que contienen marcadores típicos de una recomendación ("se recomienda", "debería", "es necesario", "conviene", "urge", etc.).
-- Muestra esas oraciones **tal como aparecen en el texto original** (recortadas si son muy largas) — no las reescribe ni resume.
-
-Esto significa que:
-- Puede **omitir** recomendaciones redactadas de forma poco explícita o sin esas palabras clave.
-- Puede **incluir** alguna frase que mencione esas palabras sin ser realmente una recomendación.
-- Siempre conviene revisar el documento original antes de citar una recomendación en un informe o nota formal.
+Como toda extracción asistida por IA, conviene revisar el documento original antes de citar una recomendación en un informe o nota formal.
 
 ## Formatos soportados
 
@@ -50,4 +102,5 @@ Esto significa que:
 
 ## Privacidad
 
-Ningún archivo ni texto se sube a internet. La única conexión externa que hace la página es para cargar las dos librerías (pdf.js y mammoth.js) desde su CDN público (cdnjs.cloudflare.com) la primera vez que se abre.
+- Tus documentos originales nunca salen de tu computadora más que hacia la API de Gemini durante el procesamiento (Parte 1), que tú controlas con tu propia clave.
+- La página pública (Parte 2) no recibe ni procesa ningún archivo — solo muestra el resultado ya generado.
