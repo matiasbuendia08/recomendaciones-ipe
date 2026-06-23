@@ -1,5 +1,7 @@
 # Recomendaciones de política pública — IPE
 
+https://matiasbuendia08.github.io/recomendaciones-ipe/
+
 Página pública que muestra las recomendaciones de política pública identificadas en los informes del Instituto Peruano de Economía (IPE), organizadas por tema y buscables por palabra clave.
 
 El proyecto tiene **dos partes separadas**:
