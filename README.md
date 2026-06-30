@@ -62,7 +62,7 @@ Todo el proceso toma menos de 10 minutos una vez configurado.
 
 ## ¿Los documentos del IPE son públicos?
 
-Los documentos originales **no se suben a internet**. Solo se publica el resultado de la extracción (las recomendaciones en texto), no los archivos fuente. La IA los procesa localmente desde la computadora del equipo.
+Los documentos originales ** han sido previamente publicados** para distintas revistas y periódicos como El Comercio, Gestión, etc.
 
 ---
 
