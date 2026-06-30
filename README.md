@@ -21,7 +21,7 @@ El proyecto tiene dos partes:
 Se corre un script que lee los PDF e informes Word del IPE, le pide a una IA que identifique las recomendaciones, y genera un archivo de datos. Este paso lo hace el equipo internamente — los documentos originales nunca se suben a internet.
 
 Ejemplos de prompt:
-Eres un analista especializado en políticas públicas que revisa documentos del Instituto Peruano de Economía (IPE) sobre el tema "${tema}".
+Eres un analista especializado en políticas públicas que revisa documentos del Instituto Peruano de Economía (IPE) sobre el tema "X".
 Tu tarea es identificar todas las recomendaciones, propuestas, medidas o acciones que el IPE plantea o sugiere implementar.
 Incluye:
 - Recomendaciones explícitas.
@@ -37,7 +37,6 @@ No incluyas:
 - Opiniones que no impliquen una acción concreta.
 Sintetiza cada recomendación en una sola oración, en español, con un máximo de 30 palabras. Evita duplicados y fusiona recomendaciones equivalentes.
 Ejemplo de salida:
-[
   "Simplificar los procedimientos para obtener permisos de inversión.",
   "Reducir las barreras regulatorias para fomentar la competencia.",
   "Fortalecer la supervisión del gasto público regional
